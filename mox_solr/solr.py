@@ -2,11 +2,17 @@ import requests
 import datetime
 import json
 import collections
+from mox_solr import config
+import pprint
 import logging
-logger = logging.getLogger("mox_solr")
+import pprint
 
-solrurl = "http://solr-24194:8983"
-schemas = {"os2mo":{},"lora":{}}
+
+logger = logging.getLogger("mox_solr")
+settings = config.settings
+
+solrurl = settings["SOLR_URL"]
+schemas = {"os2mo-employee":{},"os2mo-orgunit":{}}
 
 def post(*args, **kwargs):
     # override when testing
@@ -24,6 +30,7 @@ def schema(rectype, record):
         res = post(
             solrurl+"/solr/" + rectype + "/schema",
             json={"add-field": field})
+        res.raise_for_status()
 
 def flatten(d, parent_key='', sep='.', rectype=""):
     items = []
@@ -33,7 +40,8 @@ def flatten(d, parent_key='', sep='.', rectype=""):
             continue
         if isinstance(v, list):
             items.extend(flatten({str(i):iv for i,iv in enumerate(v)}, new_key, sep=sep).items())
-        if isinstance(v, collections.MutableMapping):
+            continue
+        elif isinstance(v, collections.MutableMapping):
             items.extend(flatten(v, new_key, sep=sep).items())
         elif new_key.endswith("validity.from"):
             items.append((new_key, v +"T00:00:00Z"))
@@ -49,23 +57,25 @@ def flatten(d, parent_key='', sep='.', rectype=""):
         schema(rectype, retdict)
     return retdict
 
-import pprint
 def upsert_orgunit(orgunit):
     logger.debug("upsert orgunit: %s", orgunit["uuid"])
     orgunit["id"] = orgunit["uuid"]
-    add("os2mo", [flatten(orgunit)])
+    add("os2mo-orgunit", flatten(orgunit))
 
 def upsert_employee(employee):
     logger.debug("upsert employee: %s", employee["uuid"])
     employee["id"] = employee["uuid"]
-    add("os2mo", [flatten(employee)])
+    add("os2mo-employee", flatten(employee))
 
 
-def add(core, records):
-    payload = ",\n".join(['"add": { "doc": %s }' % json.dumps(r) for r in records])
-    payload = "{\n%s\n}"% payload
-    return post(solrurl + "/solr/"
-                + core + "/update?commitWithin=10000",
-                headers={"Content-Type": "application/json"},
-                data=payload)
+def add(core, record):
+    try:
+        res =  post(solrurl + "/solr/"
+                    + "default" + "/update?commitWithin=10000",
+                    #headers={"Content-Type": "application/json"},
+                    json=[record])
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print (e)
+            #raise
 
