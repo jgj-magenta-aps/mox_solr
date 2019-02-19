@@ -53,6 +53,7 @@ def get_solr_employee(uuid):
     employee["id"] = employee["uuid"]
     apply_all_details(employee, "e")
     apply_history(employee, "e")
+    apply_integrationdata(employee, "e")
     return employee
 
 
@@ -65,6 +66,7 @@ def get_solr_orgunit(uuid):
     orgunit["id"] = orgunit["uuid"]
     apply_all_details(orgunit, "ou")
     apply_history(orgunit, "ou")
+    apply_integrationdata(orgunit, "ou")
     return orgunit
 
 
@@ -88,3 +90,16 @@ def apply_history(obj, objtyp):
     obj["history"] = os2mo_get(
         "{BASE}/" + objtyp + "/" + obj["uuid"] + "/history"
         ).json()
+
+
+def apply_integrationdata(obj, objtyp):
+    data_envelope = os2mo_get(
+        "{BASE}/" + objtyp + "/" + obj["uuid"] + "/integration-data").json()
+    for k,v in data_envelope.get("integration_data", {}).items():
+        obj.setdefault(
+            "integration_data",
+            {}
+        ).setdefault(
+            k,
+            v.rsplit("STOP", maxsplit=1)[0]
+        )
