@@ -17,10 +17,11 @@ else:
 config = configparser.ConfigParser(defaults={
     "MOX_LOG_LEVEL": "10",
     "MOX_LOG_FILE": "",
-    "OS2MO_SERVICE_URL": "http://some-os2mo-url/service",
+    "OS2MO_SERVICE_URL": "http://some-os2mo-url:5000/service",
     "OS2MO_SAML_TOKEN": "token-from-saml-slash-api-token",
     "OS2MO_ORG_UUID": "",
     "OS2MO_CA_BUNDLE": "true",
+    "SOLR_URL": "http://some-solr-url:8983"
 })
 
 config["settings"] = {}
