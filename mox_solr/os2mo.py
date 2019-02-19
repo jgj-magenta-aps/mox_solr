@@ -83,6 +83,7 @@ def apply_all_details(obj, objtyp):
                 ).json()
             )
 
+
 def apply_history(obj, objtyp):
     obj["history"] = os2mo_get(
         "{BASE}/" + objtyp + "/" + obj["uuid"] + "/history"
