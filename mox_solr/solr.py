@@ -6,6 +6,9 @@ from mox_solr import config
 import pprint
 import logging
 import pprint
+import dateutil.parser
+import pytz
+import re
 
 
 logger = logging.getLogger("mox_solr")
@@ -29,7 +32,9 @@ def schema(rectype, record):
             field["type"] = "pdates"
         elif k.endswith("validity.to"):
             field["type"] = "pdates"
-        logger.debug(field)
+        elif re.match('history\.[0-9]+\.(from|to)', k):
+            field["type"] = "pdates"
+        logger.debug("adding field to schema %r", field)
         res = post(
             solrurl+"/solr/" + rectype + "/schema",
             json={"add-field": field})
@@ -52,6 +57,10 @@ def flatten(d, parent_key='', sep='.', rectype=""):
                 items.append((new_key, v +"T00:00:00Z"))
             else:
                 items.append((new_key, "9999-12-31T00:00:00Z"))
+        elif re.match('history\.[0-9]+\.(from|to)', new_key) and v:
+            dttz = dateutil.parser.parse(v)
+            dtutc = dttz.astimezone(pytz.utc)
+            items.append((new_key, dtutc.strftime("%Y-%m-%dT%H:%M:%SZ")))
         elif v:
             items.append((new_key, v))
     retdict = dict(items)
@@ -71,8 +80,8 @@ def upsert_employee(employee):
 
 
 def add(core, record):
-    import pprint
-    pprint.pprint(record)
+    #import pprint
+    #pprint.pprint(record)
     try:
         res =  post(solrurl + "/solr/"
                     + core + "/update/json/docs?commitWithin=10000",
