@@ -15,15 +15,31 @@ logger = logging.getLogger("mox_solr")
 settings = config.settings
 
 solrurl = settings["SOLR_URL"]
-schemas = {"os2mo-employee":{},"os2mo-orgunit":{}}
+schemas = {}
+
+
+def get(*args, **kwargs):
+    # override when testing
+    return requests.get(*args, **kwargs)
+
 
 def post(*args, **kwargs):
     # override when testing
     return requests.post(*args, **kwargs)
 
+
 def schema(rectype, record):
-    # post fields
+    # fetch existing fields from solr
+    if not rectype in schemas:
+        schemas[rectype] = {
+            f["name"]:f 
+            for f in get(
+                solrurl + "/solr/" + rectype + "/schema/fields"
+            ).json()['fields']
+        }
     s = schemas[rectype]
+
+    # add any new fields, infering type
     for k,v in record.items():
         if k in s:
             continue
@@ -39,7 +55,9 @@ def schema(rectype, record):
             solrurl+"/solr/" + rectype + "/schema",
             json={"add-field": field})
 
+
 def flatten(d, parent_key='', sep='.', rectype=""):
+    # recursive, how to know top? only caller sends rectype.
     items = []
     for k, v in d.items():
         new_key = parent_key + sep + k if parent_key else k
@@ -64,14 +82,16 @@ def flatten(d, parent_key='', sep='.', rectype=""):
         elif v:
             items.append((new_key, v))
     retdict = dict(items)
-    if rectype and set(retdict) != set(schemas[rectype]):
+    if rectype and set(retdict) != set(schemas.get(rectype,{})):
         schema(rectype, retdict)
     return retdict
+
 
 def upsert_orgunit(orgunit):
     logger.debug("upsert orgunit: %s", orgunit["uuid"])
     orgunit["id"] = orgunit["uuid"]
     add("os2mo-orgunit", flatten(orgunit, rectype="os2mo-orgunit"))
+
 
 def upsert_employee(employee):
     logger.debug("upsert employee: %s", employee["uuid"])
@@ -80,8 +100,6 @@ def upsert_employee(employee):
 
 
 def add(core, record):
-    #import pprint
-    #pprint.pprint(record)
     try:
         res =  post(solrurl + "/solr/"
                     + core + "/update/json/docs?commitWithin=10000",
