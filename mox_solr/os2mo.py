@@ -52,7 +52,7 @@ def get_solr_employee(uuid):
     employee = os2mo_get("{BASE}/e/" + uuid + "/").json()
     employee["id"] = employee["uuid"]
     apply_all_details(employee, "e")
-    #apply_history(employee, "e")
+    apply_history(employee, "e")
     return employee
 
 
@@ -63,8 +63,8 @@ def org_unit_uuids():
 def get_solr_orgunit(uuid):
     orgunit = os2mo_get("{BASE}/ou/" + uuid + "/").json()
     orgunit["id"] = orgunit["uuid"]
-    #apply_all_details(orgunit, "ou")
-    #apply_history(orgunit, "ou")
+    apply_all_details(orgunit, "ou")
+    apply_history(orgunit, "ou")
     return orgunit
 
 

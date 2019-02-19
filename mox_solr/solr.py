@@ -22,7 +22,9 @@ def schema(rectype, record):
     # post fields
     s = schemas[rectype]
     for k,v in record.items():
-        s[k] = field = { "name": k, "stored": True, "type": "strings"}
+        if k in s:
+            continue
+        s[k] = field = { "name": k, "stored": True, "type": "text_general"}
         if k.endswith("validity.from"):
             field["type"] = "pdates"
         elif k.endswith("validity.to"):
@@ -31,7 +33,6 @@ def schema(rectype, record):
         res = post(
             solrurl+"/solr/" + rectype + "/schema",
             json={"add-field": field})
-        res.raise_for_status()
 
 def flatten(d, parent_key='', sep='.', rectype=""):
     items = []
@@ -74,8 +75,8 @@ def add(core, record):
     pprint.pprint(record)
     try:
         res =  post(solrurl + "/solr/"
-                    + core + "/update?commitWithin=10000",
-                    #headers={"Content-Type": "application/json"},
+                    + core + "/update/json/docs?commitWithin=10000",
+                    headers={"Content-Type": "application/json"},
                     json=record)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
