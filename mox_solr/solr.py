@@ -60,13 +60,13 @@ def flatten(d, parent_key='', sep='.', rectype=""):
         new_key = parent_key + sep + k if parent_key else k
         if new_key.endswith("user_settings"):
             continue
-        if isinstance(v, list):
-            items.extend(flatten({
-                str(i): iv
-                for i, iv in enumerate(v)
-                }, new_key, sep=sep).items())
-            continue
-        elif isinstance(v, collections.MutableMapping):
+        #if isinstance(v, list):
+        #    items.extend(flatten({
+        #        str(i): iv
+        #        for i, iv in enumerate(v)
+        #        }, new_key, sep=sep).items())
+        #    continue
+        if isinstance(v, collections.MutableMapping):
             items.extend(flatten(v, new_key, sep=sep).items())
         elif new_key.endswith("validity.from"):
             items.append((new_key, v+"T00:00:00Z"))

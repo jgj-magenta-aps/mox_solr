@@ -75,15 +75,24 @@ def apply_all_details(obj, objtyp):
             "{BASE}/" + objtyp + "/" + obj["uuid"] + "/details"
     ).json().items():
         if has_detail:
-            obj.setdefault(
+            tmp=[]
+            this_detail=obj.setdefault(
                 "details", {}
             ).setdefault(
-                d, []
-            ).extend(
-                os2mo_get(
-                    "{BASE}/" + objtyp + "/" + obj["uuid"] + "/details/" + d
-                ).json()
+                d, {}
             )
+            tmp.extend(
+                os2mo_get("{BASE}/" + objtyp + "/" + obj["uuid"] + "/details/" + d + '?validity=past').json()
+            )
+            tmp.extend(
+                os2mo_get("{BASE}/" + objtyp + "/" + obj["uuid"] + "/details/" + d + '?validity=present').json()
+            )
+            tmp.extend(
+                os2mo_get("{BASE}/" + objtyp + "/" + obj["uuid"] + "/details/" + d + '?validity=future').json()
+            )
+            for record in tmp:
+                for k,v in record.items():
+                    this_detail.setdefault(k,[]).append(v)
 
 
 def apply_history(obj, objtyp):
